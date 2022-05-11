@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>threejs.004</title>
+  <script text="module" charset="UTF-8" src="../../libs/threejs/Three.js"></script>
+  <style>
+    body{margin: 0;overflow: hidden}
+  </style>
+</head>
+
+<body>
+  <!-- 我们将把threejs渲染效果限制在这个div中 -->
+  <div id="puidu-webgl-output">
+  </div>
+  <div id="myStats"></div>
+
+  <!-- 坐标轴 光源 和阴影效果 -->
+  <script type="module">
+    import {Scene, PerspectiveCamera,
+      WebGLRenderer, BoxGeometry,
+      MeshBasicMaterial, Mesh, AxesHelper,
+      PlaneGeometry,MeshLambertMaterial, AmbientLight,
+      SpotLight,Vector2,Fog,FogExp2
+    } from "../../libs/threejs/Three.js";
+
+    import {Stats} from "../../libs/stats/Stats.js";
+    import * as dat from "../../libs/dat.gui/dat.gui.module.js";
+
+    var scene = new Scene();
+    //scene.fog = new Fog(0xffffff, 0.01, 100);
+    //scene.fog = new FogExp2(0xff0000, 0.02);
+
+    //强制场景中的物体使用相同的属性
+    scene.overrideMaterial = new MeshLambertMaterial({color: 0x2afdde});
+
+    var camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+    var render = new WebGLRenderer();
+    render.setSize(window.innerWidth, window.innerHeight);
+    //设置阴影
+    render.shadowMap.enabled = true;
+    document.getElementById("puidu-webgl-output").appendChild(render.domElement);
+
+
+    let axes = new AxesHelper(50);
+    //axes.setColors(0xffff00, 0x00ffff, 0xff00ff);
+    scene.add(axes);
+
+    let geometry = new BoxGeometry(2, 2, 2);
+    let material = new MeshLambertMaterial({color: 0xff2288});
+    var cube = new Mesh(geometry, material);
+    scene.add(cube);
+
+    cube.castShadow = true;
+    cube.position.x = 0;
+    cube.position.y = 5;
+    cube.position.z = 5;
+
+    let geometry2 = new BoxGeometry(4,4,4);
+    let material2 = new MeshLambertMaterial({color: 0x00ff00});
+    var cube2 = new Mesh(geometry2, material2);
+    cube2.castShadow = true;
+
+    cube2.position.x = 0;
+    cube2.position.y = 4;
+    cube2.position.z = 0;
+    cube2.name = 'cube2';
+
+    scene.add(cube2);
+
+    //查看场景中一共有多少个物体
+    console.log(scene.children.length);
+    //根据元素的名称获得对象
+    var findObj = scene.getObjectByName('cube2', false);
+    console.log(findObj);
+
+    let planeGeometry = new PlaneGeometry(30, 30);
+    let planeMaterial = new MeshLambertMaterial({color:0xcccccc});
+    var plane = new Mesh(planeGeometry, planeMaterial);
+    scene.add(plane);
+    plane.rotation.x = -0.5 * Math.PI ;
+    plane.receiveShadow = true;
+
+
+    camera.position.x = -25;
+    camera.position.y = 20;
+    camera.position.z = 20;
+    camera.lookAt(scene.position);
+
+    //cube.rotation.x += 0.5;
+    //cube.rotation.y += 0.5;
+
+    let spotLight = new SpotLight(0xffffff);
+    spotLight.position.set(-40, 60, -65);
+    spotLight.castShadow = true;
+    //设置阴影效果
+    spotLight.shadow.mapSize = new Vector2(1024, 1024);
+    spotLight.shadow.camera.far = 130;
+    spotLight.shadow.camera.near = 40;
+    scene.add(spotLight);
+
+    //和MeshLambertMaterial配套使用
+    let ambientLight = new AmbientLight(0xcccccc);
+    scene.add(ambientLight);
+
+    var sts = addStats();
+    var ctrlObj = {rotationSpeed: 0.01, jumpSpeed: 0.01};
+    var ctrl = new dat.GUI();
+    ctrl.add(ctrlObj, 'rotationSpeed', 0, 1);
+    ctrl.add(ctrlObj, 'jumpSpeed', 0, 1);
+
+
+    var ctrlObj1 = new function(){
+      this.removeFindCube = function(){
+        if(findObj instanceof Mesh){
+          scene.remove(findObj);
+        }
+      }
+      this.addNewCube = function(){
+        let geometry = new BoxGeometry(4,4,4);
+        let material = new MeshLambertMaterial({color: 0x0000ff});
+        let cubeX = new Mesh(geometry, material);
+        cubeX.castShadow = true;
+
+        cubeX.position.x = Math.random() * 10;
+        cubeX.position.y = Math.random() * 10;
+        cubeX.position.z = Math.random() * 10;
+        scene.add(cubeX);
+      }
+    }
+    ctrl.add(ctrlObj1, 'removeFindCube');
+    ctrl.add(ctrlObj1, 'addNewCube');
+
+    //render.render(scene, camera);
+    renderScene();
+
+    var gap = 0;
+
+    function renderScene(){
+
+      //cube.rotation.x += 0.01;
+      //cube.rotation.y += 0.01;
+      //cube.rotation.z += 0.01;
+
+      //cube.rotation.x += ctrlObj.rotationSpeed;
+      //cube.rotation.y += ctrlObj.rotationSpeed;
+      //cube.rotation.z += ctrlObj.rotationSpeed;
+
+      //cube2.rotation.x += ctrlObj.rotationSpeed;
+      //cube2.rotation.y += ctrlObj.rotationSpeed;
+      //cube2.rotation.z += ctrlObj.rotationSpeed;
+
+      //获取所有的子物体
+      scene.traverse(function(obj){
+        if(obj instanceof Mesh && obj != plane){
+          obj.rotation.x += ctrlObj.rotationSpeed;
+          obj.rotation.y += ctrlObj.rotationSpeed;
+          obj.rotation.z += ctrlObj.rotationSpeed;
+        }
+      })
+
+      //gap += 0.01;
+      gap += ctrlObj.jumpSpeed;
+      cube.position.x = 3 + 5*Math.sin(gap);
+      cube.position.y = 3 + 5*Math.abs(Math.cos(gap));
+
+      sts.update();
+      requestAnimationFrame(renderScene);
+      render.render(scene, camera);
+    }
+
+    function addStats(){
+      let stats = new Stats();
+      stats.domElement.style.position = 'absolute';
+      stats.domElement.style.left = '0px';
+      stats.domElement.style.top = '0px';
+      stats.setMode(0);
+
+      document.getElementById("myStats").appendChild(stats.domElement);
+      return stats;
+    }
+
+    //三维场景自适应
+    window.addEventListener('resize', onWindowResize, false);
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      render.setSize(window.innerWidth, window.innerHeight);
+    }
+
+
+  </script>
+</body>
+
+</html>
